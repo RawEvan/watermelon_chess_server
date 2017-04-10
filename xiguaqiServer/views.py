@@ -4,7 +4,6 @@ from django.views.decorators.csrf import csrf_exempt
 from forms import roomForm
 import random
 import json
-import pdb
 import time
 
 try:
@@ -122,8 +121,30 @@ def room(request):
             else:
                 pass
             print time.ctime() + 'leave:' + roomInfo['roomID'] + name
+
+            # FIXME: improve this duplicated and ugly code later
+            # fix bug of waiting rooms temporary
+            waitingRooms = kv.get('waitingRooms')
+            playingRooms = kv.get('playingRooms')
             if roomInfo['player1'] == None and roomInfo['player2'] == None:
+                if roomInfo['roomID'] in waitingRooms:
+                    waitingRooms.remove(roomInfo['roomID'])
+                if roomInfo['roomID'] in playingRooms:
+                    playingRooms.remove(roomInfo['roomID'])
                 roomInfo = initRoomInfo()
+                need_update = True
+            elif roomInfo['player1'] and roomInfo['player2']:
+                pass
+            else:
+                if roomInfo['roomID'] in playingRooms:
+                    playingRooms.remove(roomInfo['roomID'])
+                if roomInfo['roomID'] not in waitingRooms:
+                    waitingRooms.append(roomInfo['roomID'])
+                need_update = True
+            if need_update:
+                kv.set('waitingRooms', playingRooms)
+                kv.set('playingRooms', playingRooms)
+
 
         elif action == 'query':
             roomInfo = json.loads(roomInfoJson)
